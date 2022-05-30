@@ -1,0 +1,14 @@
+# eaw_helpers-js:
+#   filter: rjsmin
+#   output: ckanext-eaw_helpers/%(version)s-eaw_helpers.js
+#   contents:
+#     - js/eaw_helpers.js
+#   extra:
+#     preload:
+#       - base/main
+
+# eaw_helpers-css:
+#   filter: cssrewrite
+#   output: ckanext-eaw_helpers/%(version)s-eaw_helpers.css
+#   contents:
+#     - css/eaw_helpers.css
