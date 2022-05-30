@@ -4,6 +4,49 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+    #ITemplateHelpers
+def eaw_helpers_geteawuser(username):
+    """Returns info about Eawag user:
+       + link to picture
+       + link to homepage of user
+       + ...
+
+    """
+    pic_url_prefix = ("https://www.eawag.ch/fileadmin/user_upload/"
+                      "tx_userprofiles/profileImages/")
+    def geteawhp(fullname):
+        "Returns the Eawag homepage of somebody"
+        hp_url_prefix = ('https://www.eawag.ch/en/aboutus/portrait/'
+                         'organisation/staff/profile/')
+        # If we can't derive the Eawag personal page, go to search page.
+        hp_url_fallback_template = ('https://www.eawag.ch/en/suche/'
+                                    '?q=__NAME__&tx_solr[filter][0]'
+                                    '=filtertype%3A3')
+        try:
+            last, first = fullname.split(',')
+        except (ValueError, AttributeError):
+            if not isinstance(fullname, str):
+                fullname = ''
+            logger.warn('User Fullname "{}" does not '
+                        'have standard format ("lastname, firstname")'
+                        .format(fullname))
+            return hp_url_fallback_template.replace('__NAME__', fullname)
+            
+        normname = '-'.join([s.strip().lower() for s in [first, last]])
+        return hp_url_prefix + normname
+
+    try:
+        userdict = tk.get_action('user_show')(context={'keep_email': True},
+                                              data_dict={'id': username})
+    except:
+        return None
+    eawuser = {'fullname': userdict.get('fullname'),
+               'email': userdict.get('email'),
+               'no_of_packages': userdict.get('number_created_packages'),
+               'homepage': geteawhp(userdict.get('fullname')),
+               'pic_url': '{}{}.jpg'.format(pic_url_prefix, username)}
+    return eawuser
+
 class EawHelpersPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.ITemplateHelpers)
@@ -14,50 +57,7 @@ class EawHelpersPlugin(plugins.SingletonPlugin):
         tk.add_public_directory(config_, 'public')
         tk.add_resource('fanstatic', 'eaw_helpers')
 
-    #ItemplateHelpers
-    def eaw_helpers_geteawuser(username):
-        """Returns info about Eawag user:
-           + link to picture
-           + link to homepage of user
-           + ...
-
-        """
-        pic_url_prefix = ("https://www.eawag.ch/fileadmin/user_upload/"
-                          "tx_userprofiles/profileImages/")
-        def geteawhp(fullname):
-            "Returns the Eawag homepage of somebody"
-            hp_url_prefix = ('https://www.eawag.ch/en/aboutus/portrait/'
-                             'organisation/staff/profile/')
-            # If we can't derive the Eawag personal page, go to search page.
-            hp_url_fallback_template = ('https://www.eawag.ch/en/suche/'
-                                        '?q=__NAME__&tx_solr[filter][0]'
-                                        '=filtertype%3A3')
-            try:
-                last, first = fullname.split(',')
-            except (ValueError, AttributeError):
-                if not isinstance(fullname, str):
-                    fullname = ''
-                logger.warn('User Fullname "{}" does not '
-                            'have standard format ("lastname, firstname")'
-                            .format(fullname))
-                return hp_url_fallback_template.replace('__NAME__', fullname)
-                
-            normname = '-'.join([s.strip().lower() for s in [first, last]])
-            return hp_url_prefix + normname
-
-        try:
-            userdict = tk.get_action('user_show')(context={'keep_email': True},
-                                                  data_dict={'id': username})
-        except:
-            return None
-        eawuser = {'fullname': userdict.get('fullname'),
-                   'email': userdict.get('email'),
-                   'no_of_packages': userdict.get('number_created_packages'),
-                   'homepage': geteawhp(userdict.get('fullname')),
-                   'pic_url': '{}{}.jpg'.format(pic_url_prefix, username)}
-        return eawuser
-
     # ITemplateHelpers
     def get_helpers(self):
         return {
-            'eaw_helpers_geteawuser': eaw_schema_geteawuser}
+            'eaw_helpers_geteawuser': eaw_helpers_geteawuser}
